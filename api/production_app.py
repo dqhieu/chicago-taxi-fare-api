@@ -61,21 +61,97 @@ from datetime import datetime
 import json
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-# Import simple model classes (no numpy dependencies)
-try:
-    from model_classes import SimpleLinearModel, SimpleScaler, SimpleLabelEncoder
-except ImportError:
-    # Fallback if model_classes not found (shouldn't happen in production)
-    print("⚠️ Could not import model_classes, using fallback")
-    SimpleLinearModel = None
-    SimpleScaler = None
-    SimpleLabelEncoder = None
+# Simple model classes for Render compatibility (no numpy dependencies)
+# Defined directly in this file to avoid import path issues on Render
+class SimpleLinearModel:
+    def __init__(self):
+        # Simple fare calculation: base + distance * rate + time * rate
+        self.base_fare = 3.25
+        self.distance_rate = 2.25  
+        self.time_rate = 0.35
+        self.coefficients = {
+            'trip_miles': 2.25,
+            'trip_seconds': 0.0058,  # Convert to minutes * rate
+            'is_peak_hour': 1.50,
+            'is_weekend': -0.75,
+            'pickup_community_area': 0.01,
+            'dropoff_community_area': 0.01,
+            'hour': 0.05,
+            'day_of_week': -0.1,
+            'month': 0.02
+        }
+    
+    def predict(self, X):
+        """Simple prediction without numpy dependencies"""
+        if hasattr(X, 'values'):  # DataFrame
+            X = X.values
+        
+        predictions = []
+        for row in X:
+            fare = self.base_fare
+            # Simple feature mapping (first 9 features)
+            features = ['trip_miles', 'trip_seconds', 'is_peak_hour', 'is_weekend', 
+                       'pickup_community_area', 'dropoff_community_area', 
+                       'hour', 'day_of_week', 'month']
+            
+            for i, feature in enumerate(features):
+                if i < len(row) and feature in self.coefficients:
+                    fare += row[i] * self.coefficients[feature]
+            
+            predictions.append(max(fare, 2.50))  # Minimum fare
+        
+        return predictions
+
+class SimpleScaler:
+    def __init__(self):
+        self.mean_ = [5.2, 1800, 0.3, 0.3, 35, 35, 12, 3, 6]  # Approximate means
+        self.scale_ = [3.0, 600, 0.5, 0.5, 20, 20, 6, 2, 3]   # Approximate scales
+    
+    def transform(self, X):
+        """Simple scaling without numpy"""
+        if hasattr(X, 'values'):
+            X = X.values
+        
+        scaled = []
+        for row in X:
+            scaled_row = []
+            for i, val in enumerate(row):
+                if i < len(self.mean_):
+                    scaled_val = (val - self.mean_[i]) / self.scale_[i]
+                    scaled_row.append(scaled_val)
+                else:
+                    scaled_row.append(val)
+            scaled.append(scaled_row)
+        return scaled
+
+class SimpleLabelEncoder:
+    def __init__(self, categories=None):
+        self.categories = categories or ['Credit Card', 'Cash', 'Unknown']
+        self.mapping = {cat: i for i, cat in enumerate(self.categories)}
+    
+    def transform(self, values):
+        return [self.mapping.get(str(val), 0) for val in values]
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+
+# Make classes available in global namespace for pickle compatibility
+# This allows pickle to find classes saved with __main__ module references
+import sys
+current_module = sys.modules[__name__]
+current_module.SimpleLinearModel = SimpleLinearModel
+current_module.SimpleScaler = SimpleScaler
+current_module.SimpleLabelEncoder = SimpleLabelEncoder
+
+# Also add to __main__ module for pickle compatibility
+if '__main__' in sys.modules:
+    main_module = sys.modules['__main__']
+    main_module.SimpleLinearModel = SimpleLinearModel
+    main_module.SimpleScaler = SimpleScaler
+    main_module.SimpleLabelEncoder = SimpleLabelEncoder
 logger = logging.getLogger(__name__)
 
 # Initialize Flask app with production configuration
@@ -87,7 +163,11 @@ class ProductionConfig:
     DEBUG = False
     TESTING = False
     SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-change-this')
-    MODEL_PATH = os.environ.get('MODEL_PATH', 'models/')
+    # Smart model path detection for local vs production
+    if os.path.exists('models/'):
+        MODEL_PATH = os.environ.get('MODEL_PATH', 'models/')  # Running from project root
+    else:
+        MODEL_PATH = os.environ.get('MODEL_PATH', '../models/')  # Running from api/ directory
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max request size
 
 app.config.from_object(ProductionConfig)
@@ -230,16 +310,33 @@ def engineer_features(trip_data):
         logger.error(f"Feature engineering error: {e}")
         raise ValueError(f"Feature engineering failed: {e}")
 
-# Initialize model components at startup
-logger.info("🚀 Initializing Chicago Taxi Fare Prediction API...")
-if not load_model_components():
-    logger.error("❌ Failed to initialize model components")
-    raise RuntimeError("Model initialization failed")
+# Global variables for lazy loading
+model = None
+scaler = None
+label_encoders = None
+model_metadata = None
+
+def ensure_models_loaded():
+    """Lazy load models on first API call"""
+    global model, scaler, label_encoders, model_metadata
+    
+    if model is None:
+        logger.info("🚀 Loading Chicago Taxi Fare Prediction models...")
+        if not load_model_components():
+            logger.error("❌ Failed to load model components")
+            raise RuntimeError("Model initialization failed")
+    
+    return True
+
+# Log that the app is ready (but models will load on first request)
+logger.info("🚀 Chicago Taxi Fare Prediction API ready (models will load on first request)")
 
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint with detailed status"""
     try:
+        # Try to load models for health check
+        ensure_models_loaded()
         status = {
             'status': 'healthy',
             'timestamp': datetime.now().isoformat(),
@@ -266,6 +363,9 @@ def health_check():
 def predict_fare():
     """Production fare prediction with comprehensive validation"""
     try:
+        # Ensure models are loaded
+        ensure_models_loaded()
+        
         # Validate request
         if not request.is_json:
             return jsonify({'error': 'Request must be JSON'}), 400
@@ -391,6 +491,9 @@ def predict_fare():
 def batch_predict():
     """Batch prediction endpoint"""
     try:
+        # Ensure models are loaded
+        ensure_models_loaded()
+        
         if not request.is_json:
             return jsonify({'error': 'Request must be JSON'}), 400
         
