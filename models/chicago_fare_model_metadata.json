@@ -20,6 +20,7 @@
   "compatibility": {
     "type": "ultra_simple",
     "no_numpy_dependencies": true,
-    "protocol": 2
+    "protocol": 2,
+    "module": "model_classes"
   }
 }

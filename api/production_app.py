@@ -61,6 +61,16 @@ from datetime import datetime
 import json
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+# Import simple model classes (no numpy dependencies)
+try:
+    from model_classes import SimpleLinearModel, SimpleScaler, SimpleLabelEncoder
+except ImportError:
+    # Fallback if model_classes not found (shouldn't happen in production)
+    print("⚠️ Could not import model_classes, using fallback")
+    SimpleLinearModel = None
+    SimpleScaler = None
+    SimpleLabelEncoder = None
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
