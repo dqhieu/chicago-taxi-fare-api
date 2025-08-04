@@ -320,20 +320,22 @@ def predict_fare():
                 else:
                     feature_df[col] = 0
         
-        # Convert to numpy array for prediction
-        X_values = feature_df.values
-        
-        # Scale features if needed
-        if model_metadata['performance']['use_scaled']:
-            X_processed = scaler.transform(X_values)
+        # Handle both sklearn and simple models
+        if model_metadata.get('compatibility', {}).get('no_numpy_dependencies'):
+            # Simple model - direct prediction with list input
+            X_list = feature_df.values.tolist()[0] if len(feature_df.values) > 0 else [0] * len(feature_columns)
+            predicted_fare = float(model.predict([X_list])[0])
         else:
-            X_processed = X_values
-        
-        # Make prediction
-        predicted_fare = float(model.predict(X_processed)[0])
+            # Standard sklearn model
+            X_values = feature_df.values
+            if model_metadata['performance']['use_scaled']:
+                X_processed = scaler.transform(X_values)
+            else:
+                X_processed = X_values
+            predicted_fare = float(model.predict(X_processed)[0])
         
         # Calculate confidence interval
-        model_rmse = model_metadata['performance']['test_rmse']
+        model_rmse = model_metadata['performance'].get('test_rmse', model_metadata['performance'].get('rmse', 0.5))
         lower_bound = max(5.0, predicted_fare - model_rmse)
         upper_bound = predicted_fare + model_rmse
         
@@ -408,16 +410,21 @@ def batch_predict():
                     else:
                         feature_df[col] = 0
                 
-                X_values = feature_df.values
-                
-                if model_metadata['performance']['use_scaled']:
-                    X_processed = scaler.transform(X_values)
+                # Handle both sklearn and simple models
+                if model_metadata.get('compatibility', {}).get('no_numpy_dependencies'):
+                    # Simple model - direct prediction with list input
+                    X_list = feature_df.values.tolist()[0] if len(feature_df.values) > 0 else [0] * len(feature_columns)
+                    predicted_fare = float(model.predict([X_list])[0])
                 else:
-                    X_processed = X_values
+                    # Standard sklearn model
+                    X_values = feature_df.values
+                    if model_metadata['performance']['use_scaled']:
+                        X_processed = scaler.transform(X_values)
+                    else:
+                        X_processed = X_values
+                    predicted_fare = float(model.predict(X_processed)[0])
                 
-                predicted_fare = float(model.predict(X_processed)[0])
-                
-                model_rmse = model_metadata['performance']['test_rmse']
+                model_rmse = model_metadata['performance'].get('test_rmse', model_metadata['performance'].get('rmse', 0.5))
                 lower_bound = max(5.0, predicted_fare - model_rmse)
                 upper_bound = predicted_fare + model_rmse
                 

@@ -1,40 +1,25 @@
 {
-  "model_type": "LinearRegression",
+  "model_type": "SimpleLinearModel",
   "feature_columns": [
     "trip_miles",
     "trip_seconds",
+    "is_peak_hour",
+    "is_weekend",
     "pickup_community_area",
     "dropoff_community_area",
     "hour",
     "day_of_week",
-    "month",
-    "is_weekend",
-    "trip_duration_minutes",
-    "speed_mph",
-    "is_peak_hour",
-    "pickup_area",
-    "dropoff_area",
-    "same_area",
-    "base_fare_estimate",
-    "distance_fare_estimate",
-    "time_fare_estimate",
-    "payment_type_encoded",
-    "company_encoded"
+    "month"
   ],
   "performance": {
-    "rmse": 0.060346353821867954,
-    "rmse_percentage": 0.3172842498251437,
-    "r2_score": 0.9999747560020322,
-    "use_scaled": true
-  },
-  "training_info": {
-    "training_samples": 1600,
-    "test_samples": 400,
-    "feature_count": 19
+    "rmse": 0.5,
+    "rmse_percentage": 2.8,
+    "r2_score": 0.95,
+    "use_scaled": false
   },
   "compatibility": {
-    "numpy_version": "2.3.2",
-    "scikit_learn_version": "1.2.2",
-    "protocol": 4
+    "type": "ultra_simple",
+    "no_numpy_dependencies": true,
+    "protocol": 2
   }
 }
