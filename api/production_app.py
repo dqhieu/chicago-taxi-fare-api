@@ -11,19 +11,51 @@ from flask import Flask, request, jsonify
 import joblib
 import pandas as pd
 
-# NumPy compatibility fix for Render deployment
+# Environment debugging for Render
+print(f"🐍 Python version: {sys.version}")
+print(f"📁 Python path: {sys.executable}")
+print(f"📦 Python packages path: {sys.path[:3]}")
+
+# Ultra-robust NumPy import strategy for Render
 try:
     import numpy as np
+    print("✅ NumPy imported successfully")
+    print(f"📊 NumPy version: {np.__version__}")
 except ImportError as numpy_error:
-    print(f"⚠️ NumPy import issue: {numpy_error}")
+    print(f"⚠️ Primary NumPy import failed: {numpy_error}")
+    
+    # Strategy 1: Try installing NumPy
     try:
-        # Try alternative import strategy
-        import numpy._core
+        import subprocess
+        print("🔧 Attempting to install NumPy...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "--no-cache-dir", "numpy==1.23.5"])
         import numpy as np
-        print("✅ NumPy loaded via _core fallback")
-    except Exception as fallback_error:
-        print(f"❌ NumPy fallback failed: {fallback_error}")
-        raise ImportError("Unable to import NumPy. Check Render environment.") from numpy_error
+        print("✅ NumPy installed and imported successfully")
+    except Exception as install_error:
+        print(f"❌ NumPy installation failed: {install_error}")
+        
+        # Strategy 2: Try alternative import patterns
+        try:
+            import numpy._core
+            import numpy as np
+            print("✅ NumPy loaded via _core strategy")
+        except Exception as core_error:
+            print(f"❌ NumPy _core strategy failed: {core_error}")
+            
+            # Strategy 3: Environment information for debugging
+            print("🔍 Environment debugging:")
+            import os
+            print(f"PATH: {os.environ.get('PATH', 'Not found')[:200]}...")
+            print(f"PYTHONPATH: {os.environ.get('PYTHONPATH', 'Not set')}")
+            
+            # Final attempt: Try basic import without version check
+            try:
+                import numpy
+                print("✅ Basic numpy import successful")
+                np = numpy
+            except Exception as basic_error:
+                print(f"❌ All NumPy import strategies failed: {basic_error}")
+                raise ImportError("Critical: Cannot import NumPy on Render. Check environment setup.") from numpy_error
 
 from datetime import datetime
 import json
