@@ -25,6 +25,7 @@ venv/
 env/
 ENV/
 chicago-taxi-challenge/
+titanic-challenge-pipeline/
 
 # IDE
 .vscode/

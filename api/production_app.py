@@ -6,10 +6,25 @@ Optimized for deployment with proper configuration, logging, and error handling
 
 import os
 import logging
+import sys
 from flask import Flask, request, jsonify
 import joblib
 import pandas as pd
-import numpy as np
+
+# NumPy compatibility fix for Render deployment
+try:
+    import numpy as np
+except ImportError as numpy_error:
+    print(f"⚠️ NumPy import issue: {numpy_error}")
+    try:
+        # Try alternative import strategy
+        import numpy._core
+        import numpy as np
+        print("✅ NumPy loaded via _core fallback")
+    except Exception as fallback_error:
+        print(f"❌ NumPy fallback failed: {fallback_error}")
+        raise ImportError("Unable to import NumPy. Check Render environment.") from numpy_error
+
 from datetime import datetime
 import json
 from werkzeug.middleware.proxy_fix import ProxyFix
