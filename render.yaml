@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: chicago-taxi-api
+    runtime: python3
+    plan: free  # 🆓 FREE TIER!
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: |
+      gunicorn --config gunicorn_render.conf.py api.production_app:app
+    envVars:
+      - key: MODEL_PATH
+        value: models/
+      - key: LOG_LEVEL
+        value: info
+      - key: WEB_CONCURRENCY
+        value: "1"  # Free tier: single worker
+      - key: PORT
+        value: "10000"
+      - key: SECRET_KEY
+        generateValue: true  # Auto-generate secret
+    healthCheckPath: /health

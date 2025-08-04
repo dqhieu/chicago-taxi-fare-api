@@ -1,0 +1,75 @@
+# Chicago Taxi Fare API - Docker Compose Configuration
+version: '3.8'
+
+services:
+  # Main API service
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - WEB_CONCURRENCY=4
+      - MODEL_PATH=/app/models
+      - LOG_LEVEL=info
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this}
+    volumes:
+      - ./models:/app/models:ro  # Read-only model files
+      - ./logs:/app/logs         # Log directory
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - api_network
+
+  # Optional: Nginx reverse proxy (for production)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro  # SSL certificates
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - api_network
+    profiles:
+      - production
+
+  # Optional: Redis for caching (if needed)
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - api_network
+    profiles:
+      - with-cache
+
+  # Optional: Prometheus monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - api_network
+    profiles:
+      - monitoring
+
+networks:
+  api_network:
+    driver: bridge
+
+volumes:
+  logs:
+    driver: local

@@ -1,0 +1,1 @@
+web: gunicorn --config gunicorn_render.conf.py api.production_app:app

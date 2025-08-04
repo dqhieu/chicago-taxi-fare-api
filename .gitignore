@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+chicago-taxi-challenge/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment variables
+.env
+.env.local
+
+# Model artifacts (keep the ones we need)
+# models/*.pkl - We need these for deployment
+
+# Temporary files
+debug_features.py
+test_prediction.py
+chicago_chapter*.py
+titanic_*.py
+ultimate_*.py
+chapter*.py
+
+# Documentation drafts
+*_COMPLETE_LIST.md

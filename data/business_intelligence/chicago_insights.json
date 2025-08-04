@@ -1,0 +1,29 @@
+{
+  "pricing": {
+    "market_median_fare": 14.63,
+    "recommended_base_fare": 12.43,
+    "premium_fare": 14.2945,
+    "best_tip_category": "Cash",
+    "highest_fare_per_mile": "Short"
+  },
+  "allocation": {
+    "peak_hour": "3",
+    "best_day": "Wednesday",
+    "top_pickup_area": "73",
+    "highest_efficiency_area": "57"
+  },
+  "market_entry": {
+    "tier1_areas": [
+      73,
+      53,
+      5
+    ],
+    "tier2_areas": [
+      23,
+      19
+    ],
+    "primary_payment_method": "Credit Card",
+    "primary_fare_segment": "Standard",
+    "target_tip_rate": 19.644
+  }
+}
