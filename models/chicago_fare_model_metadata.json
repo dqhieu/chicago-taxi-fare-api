@@ -17,6 +17,7 @@
     "rmse": 0.5,
     "test_rmse": 0.5,
     "test_rmse_pct": 2.8,
+    "test_r2": 0.95,
     "rmse_percentage": 2.8,
     "r2_score": 0.95,
     "use_scaled": false
